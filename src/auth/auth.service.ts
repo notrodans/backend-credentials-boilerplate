@@ -33,20 +33,20 @@ export class AuthService {
 	}> {
 		const payload = { email: userData.email };
 		const accessToken = this.jwtService.sign(payload);
-		const newRefreshToken = await this.createRefreshToken(payload);
+		const refreshToken = await this.createRefreshToken(payload);
 		const newUser = await this.userService.update(
 			{ email: userData.email },
 			{
-				refreshToken: newRefreshToken
+				refreshToken
 			}
 		);
-		const { id, createdAt, updatedAt, refreshToken, password, ...user } = newUser;
+		const { id, createdAt, updatedAt, refreshToken: userRefreshToken, password, ...user } = newUser;
 		const expiresIn = Date.now() + Number(this.configService.get("JWT_EXPIRES")) * 1000;
 		return {
 			user: user,
 			tokens: {
 				accessToken,
-				refreshToken: newRefreshToken,
+				refreshToken,
 				expiresIn
 			}
 		};
@@ -71,8 +71,9 @@ export class AuthService {
 		return newUser;
 	}
 
-	async refreshToken(refreshToken: string): Promise<{
+	async refreshTokens({ refreshToken, id }: { refreshToken: string; id: number }): Promise<{
 		accessToken: string;
+		refreshToken: string;
 		expiresIn: number;
 	}> {
 		const { iat, exp, ...payload } = await this.jwtService.verify(refreshToken);
@@ -84,9 +85,19 @@ export class AuthService {
 
 		if (user.refreshToken === refreshToken) {
 			const accessToken = this.createAccessToken(payload);
+			const refreshToken = this.createRefreshToken(payload);
 			const expiresIn = Date.now() + Number(this.configService.get("JWT_EXPIRES")) * 1000;
+
+			await this.userService.update(
+				{ id },
+				{
+					refreshToken
+				}
+			);
+
 			const obj = {
 				accessToken,
+				refreshToken,
 				expiresIn
 			};
 			return obj;

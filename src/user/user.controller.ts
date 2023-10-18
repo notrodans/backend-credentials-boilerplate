@@ -16,6 +16,7 @@ export class UserController {
 		const user = await this.userService.findByEmail(userInfo.email);
 
 		const { id, createdAt, updatedAt, refreshToken, password, ...newUser } = user;
+
 		if (!user) {
 			throw new UnauthorizedException();
 		}
