@@ -34,7 +34,7 @@ export class AuthController {
 		const valid = await this.authService.validateUser(loginDto.email, loginDto.password);
 
 		if (!valid) {
-			throw new BadRequestException("Wrong credentials");
+			throw new UnauthorizedException("Wrong credentials");
 		}
 
 		return await this.authService.login(loginDto);
